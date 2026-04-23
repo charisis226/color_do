@@ -21,6 +21,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     context.read<TaskListBloc>().add(LoadTaskLists());
+    _loadTasks(0);
   }
 
   @override
@@ -105,28 +106,15 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildMyDayView() {
-    return BlocBuilder<TaskListBloc, TaskListState>(
-      builder: (context, listState) {
-        if (listState is TaskListLoaded) {
-          if (listState.selectedListId != null) {
-            context.read<TaskBloc>().add(
-              LoadTasks(listId: listState.selectedListId),
-            );
-          } else {
-            context.read<TaskBloc>().add(const LoadTasks());
-          }
+    return BlocBuilder<TaskBloc, TaskState>(
+      builder: (context, state) {
+        if (state is TaskLoading) {
+          return const Center(child: CircularProgressIndicator());
         }
-        return BlocBuilder<TaskBloc, TaskState>(
-          builder: (context, state) {
-            if (state is TaskLoading) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (state is TaskLoaded) {
-              return _buildTaskList(state.tasks);
-            }
-            return const Center(child: Text('할 일을 추가하세요'));
-          },
-        );
+        if (state is TaskLoaded) {
+          return _buildTaskList(state.tasks);
+        }
+        return const Center(child: Text('할 일을 추가하세요'));
       },
     );
   }
