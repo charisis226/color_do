@@ -5,7 +5,6 @@ import '../models/models.dart';
 import '../widgets/widgets.dart';
 import 'add_task_screen.dart';
 import 'task_detail_screen.dart';
-import 'task_list_management_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -34,8 +33,9 @@ class _HomeScreenState extends State<HomeScreen> {
             IconButton(
               icon: const Icon(Icons.menu),
               onPressed: () {
-                Navigator.of(context).push(
-                  _SideDrawerRoute(
+                showDialog(
+                  context: context,
+                  builder: (context) => _SideDrawerOverlay(
                     selectedIndex: _selectedIndex,
                     onLoadTasks: _loadTasks,
                   ),
@@ -45,19 +45,6 @@ class _HomeScreenState extends State<HomeScreen> {
             const Text('Color.do'),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.format_list_bulleted),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const TaskListManagementScreen(),
-                ),
-              );
-            },
-          ),
-        ],
       ),
       body: IndexedStack(
         index: _selectedIndex,
@@ -244,80 +231,86 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-class _SideDrawerRoute extends PageRouteBuilder {
+class _SideDrawerOverlay extends Dialog {
   final int selectedIndex;
   final Function(int) onLoadTasks;
 
-  _SideDrawerRoute({
-    required this.selectedIndex,
-    required this.onLoadTasks,
-  }) : super(
-          pageBuilder: (context, animation, secondaryAnimation) => _SideDrawer(
-            selectedIndex: selectedIndex,
-            onLoadTasks: onLoadTasks,
-          ),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return SlideTransition(
-              position: Tween<Offset>(
-                begin: const Offset(-1.0, 0.0),
-                end: Offset.zero,
-              ).animate(CurvedAnimation(
-                parent: animation,
-                curve: Curves.easeInOut,
-              )),
-              child: child,
-            );
-          },
-          transitionDuration: const Duration(milliseconds: 250),
-        );
-}
-
-class _SideDrawer extends StatelessWidget {
-  final int selectedIndex;
-  final Function(int) onLoadTasks;
-
-  const _SideDrawer({
+  const _SideDrawerOverlay({
     required this.selectedIndex,
     required this.onLoadTasks,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: () => Navigator.pop(context),
+    final screenWidth = MediaQuery.of(context).size.width;
+    return Stack(
+      children: [
+        GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: Container(
+            color: Colors.black54,
+          ),
         ),
-        automaticallyImplyLeading: false,
-        title: const Text('할 일 목록'),
-      ),
-      body: SafeArea(
-        child: BlocBuilder<TaskListBloc, TaskListState>(
-          builder: (context, state) {
-            if (state is TaskListLoaded) {
-              return ListView.builder(
-                itemCount: state.lists.length,
-                itemBuilder: (context, index) {
-                  final list = state.lists[index];
-                  final isSelected = list.id == state.selectedListId;
-                  return TaskListTile(
-                    taskList: list,
-                    isSelected: isSelected,
-                    taskCount: 0,
-                    onTap: () {
-                      context.read<TaskListBloc>().add(SelectTaskList(list.id));
-                      onLoadTasks(selectedIndex);
-                      Navigator.pop(context);
+        Positioned(
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: screenWidth * 0.5,
+          child: Material(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        '할 일 목록',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(),
+                Expanded(
+                  child: BlocBuilder<TaskListBloc, TaskListState>(
+                    builder: (context, state) {
+                      if (state is TaskListLoaded) {
+                        return ListView.builder(
+                          itemCount: state.lists.length,
+                          itemBuilder: (context, index) {
+                            final list = state.lists[index];
+                            final isSelected = list.id == state.selectedListId;
+                            return TaskListTile(
+                              taskList: list,
+                              isSelected: isSelected,
+                              taskCount: 0,
+                              onTap: () {
+                                context.read<TaskListBloc>().add(SelectTaskList(list.id));
+                                onLoadTasks(selectedIndex);
+                                Navigator.pop(context);
+                              },
+                            );
+                          },
+                        );
+                      }
+                      return const Center(child: CircularProgressIndicator());
                     },
-                  );
-                },
-              );
-            }
-            return const Center(child: CircularProgressIndicator());
-          },
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 }
