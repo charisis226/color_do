@@ -6,6 +6,76 @@ import '../theme/app_theme.dart';
 class TaskListManagementScreen extends StatefulWidget {
   const TaskListManagementScreen({super.key});
 
+  static Future<void> showAddListDialog(BuildContext parentContext) async {
+    final nameController = TextEditingController();
+    int selectedColor = AppTheme.listColors.first.value;
+
+    showDialog(
+      context: parentContext,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setState) => AlertDialog(
+          title: const Text('새 목록'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(hintText: '목록 이름'),
+              ),
+              const SizedBox(height: 16),
+              const Text('색상 선택'),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: AppTheme.listColors.map((color) {
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        selectedColor = color.value;
+                      });
+                    },
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                        border: selectedColor == color.value
+                            ? Border.all(color: Colors.black, width: 2)
+                            : null,
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('취소'),
+            ),
+            TextButton(
+              onPressed: () {
+                if (nameController.text.trim().isNotEmpty) {
+                  parentContext.read<TaskListBloc>().add(
+                    AddTaskList(
+                      name: nameController.text.trim(),
+                      colorValue: selectedColor,
+                    ),
+                  );
+                  Navigator.pop(dialogContext);
+                }
+              },
+              child: const Text('추가'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   State<TaskListManagementScreen> createState() =>
       _TaskListManagementScreenState();

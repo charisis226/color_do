@@ -5,6 +5,7 @@ import '../models/models.dart';
 import '../widgets/widgets.dart';
 import 'add_task_screen.dart';
 import 'task_detail_screen.dart';
+import 'task_list_management_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -305,6 +306,14 @@ class _SideDrawerOverlay extends Dialog {
                       return const Center(child: CircularProgressIndicator());
                     },
                   ),
+                ),
+                const Divider(),
+                ListTile(
+                  leading: const Icon(Icons.add),
+                  title: const Text('새 목록'),
+                  onTap: () {
+                    TaskListManagementScreen.showAddListDialog(context);
+                  },
                 ),
               ],
             ),
