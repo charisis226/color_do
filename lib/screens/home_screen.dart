@@ -28,7 +28,23 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Color.do'),
+        automaticallyImplyLeading: false,
+        title: Row(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.menu),
+              onPressed: () {
+                Navigator.of(context).push(
+                  _SideDrawerRoute(
+                    selectedIndex: _selectedIndex,
+                    onLoadTasks: _loadTasks,
+                  ),
+                );
+              },
+            ),
+            const Text('Color.do'),
+          ],
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.format_list_bulleted),
@@ -90,8 +106,8 @@ class _HomeScreenState extends State<HomeScreen> {
         final taskListState = context.read<TaskListBloc>().state;
         if (taskListState is TaskListLoaded) {
           context.read<TaskBloc>().add(
-            LoadTasks(listId: taskListState.selectedListId),
-          );
+                LoadTasks(listId: taskListState.selectedListId),
+              );
         } else {
           context.read<TaskBloc>().add(const LoadTasks());
         }
@@ -225,5 +241,83 @@ class _HomeScreenState extends State<HomeScreen> {
       context,
       MaterialPageRoute(builder: (context) => TaskDetailScreen(task: task)),
     ).then((_) => _loadTasks(_selectedIndex));
+  }
+}
+
+class _SideDrawerRoute extends PageRouteBuilder {
+  final int selectedIndex;
+  final Function(int) onLoadTasks;
+
+  _SideDrawerRoute({
+    required this.selectedIndex,
+    required this.onLoadTasks,
+  }) : super(
+          pageBuilder: (context, animation, secondaryAnimation) => _SideDrawer(
+            selectedIndex: selectedIndex,
+            onLoadTasks: onLoadTasks,
+          ),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(-1.0, 0.0),
+                end: Offset.zero,
+              ).animate(CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeInOut,
+              )),
+              child: child,
+            );
+          },
+          transitionDuration: const Duration(milliseconds: 250),
+        );
+}
+
+class _SideDrawer extends StatelessWidget {
+  final int selectedIndex;
+  final Function(int) onLoadTasks;
+
+  const _SideDrawer({
+    required this.selectedIndex,
+    required this.onLoadTasks,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: () => Navigator.pop(context),
+        ),
+        automaticallyImplyLeading: false,
+        title: const Text('할 일 목록'),
+      ),
+      body: SafeArea(
+        child: BlocBuilder<TaskListBloc, TaskListState>(
+          builder: (context, state) {
+            if (state is TaskListLoaded) {
+              return ListView.builder(
+                itemCount: state.lists.length,
+                itemBuilder: (context, index) {
+                  final list = state.lists[index];
+                  final isSelected = list.id == state.selectedListId;
+                  return TaskListTile(
+                    taskList: list,
+                    isSelected: isSelected,
+                    taskCount: 0,
+                    onTap: () {
+                      context.read<TaskListBloc>().add(SelectTaskList(list.id));
+                      onLoadTasks(selectedIndex);
+                      Navigator.pop(context);
+                    },
+                  );
+                },
+              );
+            }
+            return const Center(child: CircularProgressIndicator());
+          },
+        ),
+      ),
+    );
   }
 }
